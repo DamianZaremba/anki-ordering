@@ -1,0 +1,55 @@
+<div id="ord">
+  <h3 id="ord-title">{{Title}}</h3>
+  <div id="ord-question">{{Question}}</div>
+  <div id="ord-summary"></div>
+  <div id="ord-results"></div>
+  <div id="ord-note">{{Explanation}}</div>
+</div>
+<script type="application/json" id="ord-items-data">{{Items}}</script>
+
+<script>
+(function () {
+  const items = JSON.parse(document.getElementById('ord-items-data').textContent || '[]');
+  const stored = sessionStorage.getItem('ord-order');
+  const order = stored ? JSON.parse(stored) : items.map(function (_, i) { return i; });
+
+  const resultsEl = document.getElementById('ord-results');
+  let correct = 0;
+
+  order.forEach(function (itemIdx, position) {
+    const isCorrect = itemIdx === position;
+    if (isCorrect) correct++;
+
+    const row = document.createElement('div');
+    row.className = 'ord-result ' + (isCorrect ? 'correct' : 'wrong');
+
+    const num = document.createElement('div');
+    num.className = 'ord-result-num';
+    num.textContent = (position + 1) + '.';
+
+    const text = document.createElement('div');
+    text.className = 'ord-result-text';
+    text.textContent = items[itemIdx];
+
+    const icon = document.createElement('div');
+    icon.className = 'ord-result-icon';
+    icon.textContent = isCorrect ? '✓' : '✗';
+
+    row.appendChild(num);
+    row.appendChild(text);
+    row.appendChild(icon);
+
+    if (!isCorrect) {
+      const label = document.createElement('div');
+      label.className = 'ord-result-label';
+      label.textContent = 'should be: ' + items[position];
+      row.appendChild(label);
+    }
+
+    resultsEl.appendChild(row);
+  });
+
+  document.getElementById('ord-summary').textContent =
+    correct + ' / ' + items.length + ' in the right place';
+})();
+</script>

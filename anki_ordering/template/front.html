@@ -1,0 +1,115 @@
+<div id="ord">
+  <h3 id="ord-title">{{Title}}</h3>
+  <div id="ord-question">{{Question}}</div>
+  <div id="ord-hint">Drag to arrange in the correct order, then flip the card</div>
+  <div id="ord-list"></div>
+</div>
+<script type="application/json" id="ord-items-data">{{Items}}</script>
+
+<script>
+(function () {
+  const items = JSON.parse(document.getElementById('ord-items-data').textContent || '[]');
+  const listEl = document.getElementById('ord-list');
+
+  sessionStorage.removeItem('ord-order');
+
+  let order = items.map(function (_, i) { return i; });
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+  }
+
+  let held = null, startY = 0;
+
+  function persist() {
+    sessionStorage.setItem('ord-order', JSON.stringify(order));
+  }
+
+  function renumber() {
+    Array.from(listEl.children).forEach(function (row, position) {
+      row.querySelector('.ord-row-num').textContent = (position + 1) + '.';
+    });
+  }
+
+  function render() {
+    listEl.innerHTML = '';
+    order.forEach(function (itemIdx) {
+      const row = document.createElement('div');
+      row.className = 'ord-row';
+
+      const handle = document.createElement('div');
+      handle.className = 'ord-row-handle';
+      handle.textContent = '⠿';
+
+      const num = document.createElement('div');
+      num.className = 'ord-row-num';
+
+      const text = document.createElement('div');
+      text.className = 'ord-row-text';
+      text.textContent = items[itemIdx];
+
+      row.appendChild(handle);
+      row.appendChild(num);
+      row.appendChild(text);
+      row.addEventListener('pointerdown', startDrag);
+      listEl.appendChild(row);
+    });
+    renumber();
+  }
+
+  function startDrag(e) {
+    if (held || e.button > 0) return;
+    e.preventDefault();
+    held = e.currentTarget;
+    held.setPointerCapture(e.pointerId);
+    held.classList.add('dragging');
+    startY = e.clientY;
+
+    held.addEventListener('pointermove', moveDrag);
+    held.addEventListener('pointerup', endDrag);
+    held.addEventListener('pointercancel', endDrag);
+  }
+
+  function moveDrag(e) {
+    held.style.transform = 'translateY(' + (e.clientY - startY) + 'px)';
+
+    const rows = Array.from(listEl.children);
+    const heldIdx = rows.indexOf(held);
+    const heldRect = held.getBoundingClientRect();
+    const heldCenter = heldRect.top + heldRect.height / 2;
+
+    for (let idx = 0; idx < rows.length; idx++) {
+      const row = rows[idx];
+      if (row === held) continue;
+      const rect = row.getBoundingClientRect();
+      const rowCenter = rect.top + rect.height / 2;
+
+      if ((idx < heldIdx && heldCenter < rowCenter) || (idx > heldIdx && heldCenter > rowCenter)) {
+        const oldTop = held.offsetTop;
+        listEl.insertBefore(held, idx < heldIdx ? row : row.nextSibling);
+        startY += held.offsetTop - oldTop;
+        held.style.transform = 'translateY(' + (e.clientY - startY) + 'px)';
+
+        const [moved] = order.splice(heldIdx, 1);
+        order.splice(idx, 0, moved);
+        renumber();
+        break;
+      }
+    }
+  }
+
+  function endDrag() {
+    if (!held) return;
+    held.removeEventListener('pointermove', moveDrag);
+    held.removeEventListener('pointerup', endDrag);
+    held.removeEventListener('pointercancel', endDrag);
+    held.classList.remove('dragging');
+    held.style.transform = '';
+    held = null;
+    persist();
+  }
+
+  persist();
+  render();
+})();
+</script>
