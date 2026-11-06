@@ -3,18 +3,18 @@ name = "anki-ordering"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "click",
-    "anki",
+    "click (>=8.5.0,<9.0.0)",
+    "anki (>=26.9.4,<27.0.0)",
 ]
 
 [tool.poetry]
 include = ["anki_ordering/template/*"]
 
 [tool.poetry.group.test.dependencies]
-tox = "*"
-tox-current-env = "*"
-black = "*"
-ruff = "*"
+tox = "^4.67.12"
+tox-current-env = "^0.0.17"
+black = "^26.10.1"
+ruff = "^0.17.4"
 
 [tool.ruff]
 line-length = 120
